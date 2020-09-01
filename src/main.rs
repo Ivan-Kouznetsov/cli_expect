@@ -1,8 +1,10 @@
 use std::env;
 use std::fs;
+use std::io::Write;
 use std::process;
 use std::process::Command;
 use std::str;
+use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 
 #[derive(PartialEq, Eq)]
 enum ComparisonType {
@@ -59,6 +61,13 @@ fn run_command(cmd: &str) -> String {
     String::from_utf8(outout).unwrap()
 }
 
+fn write_color(text: &str, color: Color) {
+    let mut stdout = StandardStream::stdout(ColorChoice::Auto);
+    let _ = stdout.set_color(ColorSpec::new().set_fg(Some(color)));
+    let _ = writeln!(&mut stdout, "{}", text);
+    let _ = stdout.reset();
+}
+
 fn main() {
     const EXIT_CODE_PASSED_TEST: i32 = 0;
     const EXIT_CODE_BAD_INPUT: i32 = 1;
@@ -90,10 +99,12 @@ fn main() {
     if (this_comparison == ComparisonType::ShouldContain && output_to_test.contains(&file_content))
         || (this_comparison == ComparisonType::ShouldEqual && output_to_test == file_content)
     {
-        println!("Passed. Output matched the expectation.");
+        write_color("Passed", Color::Green);
+        println!("Output matched the expectation.");
         process::exit(EXIT_CODE_PASSED_TEST);
     } else {
-        println!("Failed. Output did not match the expectation.");
+        write_color("Failed", Color::Red);
+        println!("Output did not match the expectation.");
         process::exit(EXIT_CODE_FAILED_TEST);
     }
 }
