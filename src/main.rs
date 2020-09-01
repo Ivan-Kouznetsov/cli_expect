@@ -66,7 +66,7 @@ fn main() {
         println!("Usage:");
         println!("expect \"command\" to output sample.txt");
         println!("expect \"command\" to not output sample.txt");
-        println!("expect \"command\" to not output exactly sample.txt");
+        println!("expect \"command\" to output exactly sample.txt");
         process::exit(1);
     }
 
