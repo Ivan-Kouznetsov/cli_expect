@@ -60,6 +60,10 @@ fn run_command(cmd: &str) -> String {
 }
 
 fn main() {
+    const EXIT_CODE_PASSED_TEST: i32 = 0;
+    const EXIT_CODE_BAD_INPUT: i32 = 1;
+    const EXIT_CODE_FAILED_TEST: i32 = 2;
+
     let args: Vec<String> = env::args().collect();
     let arg_result = parse_args(args);
     if arg_result.is_none() {
@@ -67,7 +71,7 @@ fn main() {
         println!("expect \"command\" to output sample.txt");
         println!("expect \"command\" to not output sample.txt");
         println!("expect \"command\" to output exactly sample.txt");
-        process::exit(1);
+        process::exit(EXIT_CODE_BAD_INPUT);
     }
 
     let user_input = arg_result.unwrap();
@@ -76,20 +80,20 @@ fn main() {
 
     if !file_read.is_ok() {
         println!("Can't read from {}", &user_input.file_name);
-        process::exit(1);
+        process::exit(EXIT_CODE_BAD_INPUT);
     }
 
     let file_content = file_read.unwrap().replace("\r\n", "\n");
     let output_to_test = run_command(&user_input.command_being_tested).replace("\r\n", "\n");
+    let this_comparison = user_input.comparison;
 
-    if (output_to_test.contains(&file_content)
-        && user_input.comparison == ComparisonType::ShouldContain)
-        || (output_to_test == file_content && user_input.comparison == ComparisonType::ShouldEqual)
+    if (this_comparison == ComparisonType::ShouldContain && output_to_test.contains(&file_content))
+        || (this_comparison == ComparisonType::ShouldEqual && output_to_test == file_content)
     {
         println!("Passed. Output matched the expectation.");
-        process::exit(0);
+        process::exit(EXIT_CODE_PASSED_TEST);
     } else {
         println!("Failed. Output did not match the expectation.");
-        process::exit(2);
+        process::exit(EXIT_CODE_FAILED_TEST);
     }
 }
