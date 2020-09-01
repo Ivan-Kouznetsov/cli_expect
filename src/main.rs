@@ -4,22 +4,35 @@ use std::process;
 use std::process::Command;
 use std::str;
 
+#[derive(PartialEq, Eq)]
+enum ComparisonType {
+    ShouldContain,
+    ShouldNotContain,
+    ShouldEqual,
+}
+
 struct UserInput {
     file_name: String,
-    should_contain: bool,
+    comparison: ComparisonType,
     command_being_tested: String,
 }
 
 fn parse_args(args: Vec<String>) -> Option<UserInput> {
     if args.len() == 5 && args[2] == "to" && args[3] == "output" {
         Some(UserInput {
-            should_contain: true,
+            comparison: ComparisonType::ShouldContain,
             command_being_tested: args[1].clone(),
             file_name: args[4].clone(),
         })
     } else if args.len() == 6 && args[2] == "to" && args[3] == "not" && args[4] == "output" {
         Some(UserInput {
-            should_contain: false,
+            comparison: ComparisonType::ShouldNotContain,
+            command_being_tested: args[1].clone(),
+            file_name: args[5].clone(),
+        })
+    } else if args.len() == 6 && args[2] == "to" && args[3] == "output" && args[4] == "exactly" {
+        Some(UserInput {
+            comparison: ComparisonType::ShouldEqual,
             command_being_tested: args[1].clone(),
             file_name: args[5].clone(),
         })
@@ -51,8 +64,9 @@ fn main() {
     let arg_result = parse_args(args);
     if arg_result.is_none() {
         println!("Usage:");
-        println!("expect \"command\" to output hello.txt");
-        println!("expect \"command\" to not output hello.txt");
+        println!("expect \"command\" to output sample.txt");
+        println!("expect \"command\" to not output sample.txt");
+        println!("expect \"command\" to not output exectly sample.txt");
         process::exit(1);
     }
 
@@ -62,17 +76,20 @@ fn main() {
 
     if !file_read.is_ok() {
         println!("Can't read from {}", &user_input.file_name);
-        return;
+        process::exit(1);
     }
 
     let file_content = file_read.unwrap().replace("\r\n", "\n");
     let output_to_test = run_command(&user_input.command_being_tested).replace("\r\n", "\n");
 
-    if output_to_test.contains(&file_content) == user_input.should_contain {
+    if (output_to_test.contains(&file_content)
+        && user_input.comparison == ComparisonType::ShouldContain)
+        || (output_to_test == file_content && user_input.comparison == ComparisonType::ShouldEqual)
+    {
         println!("Passed. Output matched the expectation.");
         process::exit(0);
     } else {
         println!("Failed. Output did not match the expectation.");
-        process::exit(1);
+        process::exit(2);
     }
 }
